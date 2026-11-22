@@ -1,0 +1,95 @@
+{
+  "name": "mam",
+  "productName": "MAM",
+  "version": "0.3.1",
+  "description": "MAM 多账号管理：Trae/CodeBuddy 账号池、自动切换、每日签到、积分追踪（桌面安装版 + Linux 无界面版）",
+  "private": true,
+  "type": "module",
+  "main": "dist-electron/bootstrap.cjs",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "mam": "tsx src/cli/index.ts",
+    "serve": "tsx src/cli/index.ts serve",
+    "typecheck": "tsc --noEmit",
+    "panel": "node scripts/gen-panel.mjs",
+    "icon": "node scripts/gen-icon.mjs",
+    "build": "node scripts/build-exe.mjs",
+    "build:desktop": "node scripts/build-desktop.mjs --main-only",
+    "dist": "node scripts/build-desktop.mjs",
+    "dist:dir": "node scripts/build-desktop.mjs --dir",
+    "start:electron": "electron ."
+  },
+  "dependencies": {
+    "commander": "^13.0.1",
+    "fastify": "^5.2.1",
+    "node-cron": "^3.0.3"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "@types/node-cron": "^3.0.11",
+    "electron": "37.10.3",
+    "electron-builder": "^25.1.8",
+    "esbuild": "^0.25.0",
+    "postject": "^1.0.0-alpha.6",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  },
+  "build": {
+    "appId": "com.mam.multiaccount",
+    "productName": "MAM",
+    "directories": {
+      "output": "release",
+      "buildResources": "build"
+    },
+    "electronDist": "node_modules/electron/dist",
+    "npmRebuild": false,
+    "files": [
+      "dist-electron/**/*",
+      "package.json",
+      "!node_modules/**/*"
+    ],
+    "asar": true,
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon.ico",
+      "artifactName": "MAM-Setup-${version}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowElevation": true,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "MAM 多账号管理",
+      "installerLanguages": [
+        "zh_CN"
+      ],
+      "language": "2052",
+      "deleteAppDataOnUninstall": false
+    },
+    "linux": {
+      "target": [
+        "AppImage"
+      ],
+      "icon": "build/icon.png",
+      "category": "Utility",
+      "artifactName": "MAM-${version}.${ext}"
+    },
+    "mac": {
+      "target": [
+        "dmg"
+      ],
+      "icon": "build/icon.png"
+    }
+  }
+}

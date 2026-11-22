@@ -1,0 +1,12 @@
+node_modules/
+data/
+dist-testdata/
+build-test/
+dist/
+dist-electron/
+release/
+build/node_modules/
+src/server/panel-html.ts
+src/electron/icon-data.ts
+*.log
+*.tmp

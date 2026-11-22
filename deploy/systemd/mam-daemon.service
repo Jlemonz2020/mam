@@ -1,0 +1,23 @@
+# 常驻守护进程（内置 cron 调度 + Web 面板），适用于长期运行的 Linux 服务器
+# 安装：
+#   sudo cp deploy/systemd/mam-daemon.service /etc/systemd/system/
+#   sudo systemctl daemon-reload && sudo systemctl enable --now mam-daemon
+[Unit]
+Description=MAM multi-account daemon (web panel + scheduler)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=mam
+Environment=MAM_HOME=/var/lib/mam
+Environment=MAM_PASSWORD_FILE=/var/lib/mam/master.key
+ExecStart=/opt/mam/mam serve
+Restart=on-failure
+RestartSec=5
+# 只监听本机；如需远程访问请自行配置反向代理 + TLS，不要直接暴露
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

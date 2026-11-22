@@ -1,0 +1,781 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MAM · 多账号管理</title>
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+<style>
+:root{
+  --bg:#070b11; --sidebar:#0a1018; --panel:#0e1520; --panel-2:#131c28; --elev:#182231;
+  --border:rgba(255,255,255,.07); --border-strong:rgba(255,255,255,.12);
+  --text:#e8eef6; --text-2:#a7b4c6; --muted:#6b7a8f;
+  --accent:#5b8cff; --accent-2:#9b6bff; --green:#34d399; --red:#f87171; --amber:#fbbf24;
+  --r:14px; --shadow:0 8px 32px rgba(0,0,0,.35);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{font-family:"Inter","Segoe UI","Microsoft YaHei",system-ui,sans-serif;background:var(--bg);color:var(--text);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}
+.hidden{display:none!important}
+svg.i{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+
+/* ---------- 按钮 / 输入 ---------- */
+button{display:inline-flex;align-items:center;gap:6px;cursor:pointer;border:1px solid var(--border-strong);background:var(--panel-2);color:var(--text);border-radius:9px;padding:7px 14px;font-size:13px;font-family:inherit;transition:.18s;white-space:nowrap}
+button:hover{background:var(--elev);border-color:rgba(255,255,255,.2)}
+button:active{transform:translateY(1px)}
+button.primary{background:linear-gradient(135deg,var(--accent),var(--accent-2));border-color:transparent;color:#fff;font-weight:600;box-shadow:0 4px 16px rgba(91,140,255,.25)}
+button.primary:hover{filter:brightness(1.08)}
+button.ghost{background:transparent}
+button.danger{color:var(--red)}
+button.danger:hover{background:rgba(248,113,113,.1);border-color:rgba(248,113,113,.4)}
+button.sm{padding:4px 10px;font-size:12px;border-radius:7px}
+button.icon{padding:6px;border-radius:8px}
+input,select,textarea{width:100%;background:var(--panel-2);border:1px solid var(--border-strong);color:var(--text);border-radius:9px;padding:9px 12px;font-size:13px;font-family:inherit;outline:none;transition:.15s}
+input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(91,140,255,.14)}
+input::placeholder{color:var(--muted)}
+label.f{display:block;font-size:12px;color:var(--text-2);margin-bottom:6px;font-weight:500}
+
+/* ---------- 锁屏 ---------- */
+#lock{position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;background:radial-gradient(900px 600px at 50% 0%,rgba(91,140,255,.16),transparent 60%),radial-gradient(700px 500px at 80% 100%,rgba(155,107,255,.12),transparent 60%),var(--bg)}
+.lock-card{width:360px;padding:38px 34px;background:rgba(14,21,32,.85);border:1px solid var(--border-strong);border-radius:20px;box-shadow:var(--shadow);backdrop-filter:blur(16px);text-align:center}
+.logo-mark{width:52px;height:52px;margin:0 auto 18px;border-radius:15px;background:linear-gradient(135deg,var(--accent),var(--accent-2));display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:800;color:#fff;box-shadow:0 8px 28px rgba(91,140,255,.4)}
+.lock-card h1{font-size:20px;font-weight:700;margin-bottom:6px}
+.lock-card p{color:var(--muted);font-size:13px;margin-bottom:26px}
+.lock-card .err{color:var(--red);font-size:12px;height:18px;margin-bottom:10px}
+.lock-card input{text-align:center;letter-spacing:2px;padding:11px}
+.lock-card button{width:100%;justify-content:center;padding:11px;margin-top:12px}
+
+/* ---------- 布局 ---------- */
+#app{display:flex;min-height:100vh}
+aside{width:236px;flex:none;background:var(--sidebar);border-right:1px solid var(--border);padding:20px 14px;position:sticky;top:0;height:100vh;display:flex;flex-direction:column}
+.brand{display:flex;align-items:center;gap:11px;padding:2px 10px 26px}
+.brand .mark{width:32px;height:32px;border-radius:9px;background:linear-gradient(135deg,var(--accent),var(--accent-2));display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;color:#fff}
+.brand .name{font-weight:700;font-size:15px;letter-spacing:.3px}
+.brand .name small{display:block;font-size:10px;color:var(--muted);font-weight:400;letter-spacing:.6px}
+nav{display:flex;flex-direction:column;gap:2px}
+nav a{display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:9px;color:var(--text-2);text-decoration:none;font-size:13.5px;transition:.15s;cursor:pointer}
+nav a:hover{background:rgba(255,255,255,.04);color:var(--text)}
+nav a.active{background:linear-gradient(90deg,rgba(91,140,255,.18),rgba(91,140,255,.04));color:#cfe0ff;box-shadow:inset 2px 0 0 var(--accent)}
+nav a .tag{margin-left:auto;font-size:10px;background:rgba(91,140,255,.18);color:#a9c4ff;padding:1px 6px;border-radius:99px}
+.side-foot{margin-top:auto;padding:14px 10px 0;border-top:1px solid var(--border);font-size:11px;color:var(--muted);display:flex;flex-direction:column;gap:6px}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--green);display:inline-block;box-shadow:0 0 8px rgba(52,211,153,.7)}
+main{flex:1;min-width:0;padding:26px 34px 50px}
+.topbar{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:24px}
+.topbar h2{font-size:21px;font-weight:700;letter-spacing:-.2px}
+.topbar .sub{color:var(--muted);font-size:12.5px;margin-top:4px}
+.actions{display:flex;gap:9px;align-items:center}
+
+/* ---------- 卡片 ---------- */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(168px,1fr));gap:14px;margin-bottom:20px}
+.stat{position:relative;background:var(--panel);border:1px solid var(--border);border-radius:var(--r);padding:16px 16px 15px;overflow:hidden;transition:.2s}
+.stat:hover{border-color:var(--border-strong);transform:translateY(-1px)}
+.stat::after{content:"";position:absolute;inset:0 0 auto 0;height:1px;background:linear-gradient(90deg,transparent,rgba(91,140,255,.5),transparent);opacity:0;transition:.2s}
+.stat:hover::after{opacity:1}
+.stat .top{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.stat .lbl{font-size:12px;color:var(--text-2)}
+.stat .ico{width:28px;height:28px;border-radius:8px;background:rgba(91,140,255,.12);color:var(--accent);display:flex;align-items:center;justify-content:center}
+.stat .val{font-size:27px;font-weight:700;letter-spacing:-.5px;font-variant-numeric:tabular-nums}
+.stat .hint{font-size:11px;color:var(--muted);margin-top:4px}
+.val.green{color:var(--green)} .val.red{color:var(--red)} .val.amber{color:var(--amber)}
+
+/* ---------- 面板 ---------- */
+.panel{background:var(--panel);border:1px solid var(--border);border-radius:var(--r);margin-bottom:18px;overflow:hidden}
+.panel-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:15px 18px;border-bottom:1px solid var(--border)}
+.panel-head h3{font-size:13.5px;font-weight:600;display:flex;align-items:center;gap:8px}
+.panel-head h3 .i{color:var(--accent)}
+.panel-body{padding:18px}
+.panel-body.flush{padding:0}
+.toolbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.toolbar .spacer{flex:1}
+.hint-bar{display:flex;gap:8px;align-items:center;font-size:12px;color:var(--muted);padding:10px 18px;border-bottom:1px solid var(--border);background:rgba(91,140,255,.04)}
+
+/* ---------- 表格 ---------- */
+table{width:100%;border-collapse:collapse}
+th{font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);font-weight:600;text-align:left;padding:11px 18px;border-bottom:1px solid var(--border);background:rgba(255,255,255,.015);white-space:nowrap}
+td{padding:12px 18px;border-bottom:1px solid var(--border);font-size:13px;vertical-align:middle}
+tbody tr:last-child td{border-bottom:none}
+tbody tr{transition:.12s}
+tbody tr:hover{background:rgba(255,255,255,.025)}
+td.actions-cell{white-space:nowrap}
+td.actions-cell button{margin-right:4px}
+.acc-name{font-weight:600;display:flex;align-items:center;gap:7px}
+.live-dot{width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 8px rgba(52,211,153,.8);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+.empty{padding:46px 20px;text-align:center;color:var(--muted);font-size:13px}
+.empty svg{width:34px;height:34px;stroke-width:1.2;margin-bottom:10px;opacity:.5}
+.num{font-variant-numeric:tabular-nums;font-weight:600}
+
+/* ---------- 徽标 ---------- */
+.pill{display:inline-flex;align-items:center;gap:5px;padding:2px 9px;border-radius:99px;font-size:11px;border:1px solid var(--border-strong);color:var(--text-2);white-space:nowrap}
+.pill::before{content:"";width:5px;height:5px;border-radius:50%;background:currentColor;opacity:.85}
+.pill.plain::before{display:none}
+.pill.active,.pill.success{color:var(--green);border-color:rgba(52,211,153,.3);background:rgba(52,211,153,.08)}
+.pill.paused,.pill.skipped{color:var(--amber);border-color:rgba(251,191,36,.3);background:rgba(251,191,36,.08)}
+.pill.invalid,.pill.banned,.pill.failed{color:var(--red);border-color:rgba(248,113,113,.3);background:rgba(248,113,113,.08)}
+.pill.already{color:#b79bff;border-color:rgba(155,107,255,.3);background:rgba(155,107,255,.08)}
+.pill.trae{color:#ff9d94;border-color:rgba(255,157,148,.25);background:rgba(255,157,148,.07)}
+.pill.codebuddy{color:#8ec5ff;border-color:rgba(142,197,255,.25);background:rgba(142,197,255,.07)}
+.chip{display:inline-block;font-size:11px;color:var(--text-2);background:rgba(255,255,255,.05);border:1px solid var(--border);padding:1px 8px;border-radius:6px;margin-right:4px}
+
+/* ---------- 图表 ---------- */
+.chart{width:100%;height:320px}
+.chart-sm{height:260px}
+
+/* ---------- 签到日历 ---------- */
+.cal-wrap{overflow-x:auto;padding:4px 2px 6px}
+.cal-grid{min-width:860px}
+.cal-head,.cal-row{display:grid;grid-template-columns:150px repeat(var(--days,31),1fr);gap:3px;align-items:center}
+.cal-head{margin-bottom:6px}
+.cal-head .d{text-align:center;font-size:10px;color:var(--muted);padding:2px 0}
+.cal-head .d.weekend{color:#7f8ea3}
+.cal-row{margin-bottom:4px}
+.cal-name{font-size:12px;color:var(--text-2);padding-right:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:flex;align-items:center;gap:6px}
+.cal-cell{aspect-ratio:1/1;border-radius:4px;background:rgba(255,255,255,.035);font-size:9px;display:flex;align-items:center;justify-content:center;color:var(--muted);cursor:default;transition:.12s}
+.cal-cell:hover{outline:1px solid var(--border-strong)}
+.cal-cell.today{box-shadow:inset 0 0 0 1px rgba(91,140,255,.7)}
+.cal-cell.success{background:rgba(52,211,153,.5);color:#eafff5}
+.cal-cell.already{background:rgba(155,107,255,.45);color:#f3edff}
+.cal-cell.failed{background:rgba(248,113,113,.5);color:#ffecec}
+.cal-cell.skipped{background:rgba(251,191,36,.35);color:#fff8e6}
+.legend{display:flex;gap:16px;font-size:11.5px;color:var(--muted);flex-wrap:wrap}
+.legend span{display:flex;align-items:center;gap:6px}
+.legend i{width:10px;height:10px;border-radius:3px;display:inline-block}
+
+/* ---------- 模态框 ---------- */
+.mask{position:fixed;inset:0;background:rgba(3,6,10,.7);backdrop-filter:blur(6px);z-index:90;display:flex;align-items:center;justify-content:center;padding:20px}
+.modal{width:520px;max-width:100%;background:var(--panel);border:1px solid var(--border-strong);border-radius:16px;box-shadow:var(--shadow);animation:pop .18s ease-out}
+@keyframes pop{from{opacity:0;transform:scale(.97) translateY(6px)}}
+.modal-head{display:flex;align-items:center;justify-content:space-between;padding:18px 20px;border-bottom:1px solid var(--border)}
+.modal-head h3{font-size:15px;font-weight:600}
+.modal-body{padding:20px;display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.modal-body .full{grid-column:1/-1}
+.modal-foot{display:flex;justify-content:flex-end;gap:10px;padding:16px 20px;border-top:1px solid var(--border)}
+.close-x{background:none;border:none;color:var(--muted);padding:4px}
+.close-x:hover{color:var(--text)}
+.field-hint{font-size:11px;color:var(--muted);margin-top:5px;line-height:1.5}
+
+/* ---------- Toast / Loading ---------- */
+#toastRoot{position:fixed;top:20px;right:20px;z-index:200;display:flex;flex-direction:column;gap:10px;pointer-events:none}
+.toast{min-width:260px;max-width:420px;background:var(--elev);border:1px solid var(--border-strong);border-left:3px solid var(--accent);border-radius:10px;padding:12px 16px;font-size:13px;box-shadow:var(--shadow);animation:slide .22s ease-out;display:flex;gap:10px;align-items:flex-start}
+.toast.ok{border-left-color:var(--green)}
+.toast.err{border-left-color:var(--red)}
+.toast .t-ico{margin-top:1px;color:var(--accent)}
+.toast.ok .t-ico{color:var(--green)} .toast.err .t-ico{color:var(--red)}
+@keyframes slide{from{opacity:0;transform:translateX(16px)}}
+#loading{position:fixed;top:0;left:0;right:0;height:2px;z-index:210;background:transparent;overflow:hidden;display:none}
+#loading.on{display:block}
+#loading::after{content:"";position:absolute;inset:0;width:40%;background:linear-gradient(90deg,transparent,var(--accent),var(--accent-2),transparent);animation:bar 1.1s infinite}
+@keyframes bar{from{transform:translateX(-100%)}to{transform:translateX(350%)}}
+
+/* ---------- 设置 ---------- */
+#cfgEditor{width:100%;min-height:430px;font-family:"JetBrains Mono",Consolas,monospace;font-size:12px;line-height:1.7;resize:vertical}
+.cfg-note{font-size:12.5px;color:var(--text-2);line-height:2}
+.cfg-note code{background:var(--panel-2);border:1px solid var(--border);padding:1px 6px;border-radius:5px;font-size:11.5px;color:#a9c4ff}
+
+/* ---------- 响应式 ---------- */
+@media(max-width:980px){
+  aside{width:66px;padding:18px 10px}
+  .brand{padding:2px 0 22px;justify-content:center} .brand .name{display:none}
+  nav a{justify-content:center;padding:11px} nav a span, nav a .tag{display:none}
+  .side-foot{display:none}
+  main{padding:20px 18px 40px}
+  .modal-body{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<!-- SVG 图标 -->
+<svg width="0" height="0" style="position:absolute">
+  <symbol id="i-grid" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></symbol>
+  <symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.3 2.9-5.5 6.5-5.5s6.5 2.2 6.5 5.5"/><path d="M17 5.5a3 3 0 0 1 0 6M18.5 14.6c2.1.6 3.5 2.3 3.5 4.4"/></symbol>
+  <symbol id="i-cal" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2.5"/><path d="M8 3v4M16 3v4M3 10h18"/><path d="M8 14h3M8 17.5h3M13.5 14h2.5"/></symbol>
+  <symbol id="i-chart" viewBox="0 0 24 24"><path d="M3 20V4"/><path d="M3 20h18"/><path d="M7 16l4-5 3.5 3L21 7"/></symbol>
+  <symbol id="i-list" viewBox="0 0 24 24"><path d="M9 6h12M9 12h12M9 18h12"/><circle cx="4.5" cy="6" r="1"/><circle cx="4.5" cy="12" r="1"/><circle cx="4.5" cy="18" r="1"/></symbol>
+  <symbol id="i-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1 1.55V21a2 2 0 1 1-4 0v-.09a1.7 1.7 0 0 0-1.1-1.55 1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-1.55-1H3a2 2 0 1 1 0-4h.09A1.7 1.7 0 0 0 4.6 8.87a1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.7 1.7 0 0 0 9 4.6h.05A1.7 1.7 0 0 0 10.1 3V3a2 2 0 1 1 4 0v.09a1.7 1.7 0 0 0 1 1.55 1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.7 1.7 0 0 0-.34 1.87v.05a1.7 1.7 0 0 0 1.55 1.05H21a2 2 0 1 1 0 4h-.09a1.7 1.7 0 0 0-1.51 1z"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-2.6-6.4"/><path d="M21 3v6h-6"/></symbol>
+  <symbol id="i-switch" viewBox="0 0 24 24"><path d="M7 4 3 8l4 4"/><path d="M3 8h13a4 4 0 0 1 4 4"/><path d="M17 20l4-4-4-4"/><path d="M21 16H8a4 4 0 0 1-4-4"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
+  <symbol id="i-edit" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></symbol>
+  <symbol id="i-trash" viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><rect x="4" y="10" width="16" height="11" rx="2.5"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></symbol>
+  <symbol id="i-play" viewBox="0 0 24 24"><path d="M7 4.5v15l13-7.5z"/></symbol>
+  <symbol id="i-coins" viewBox="0 0 24 24"><ellipse cx="12" cy="6" rx="8" ry="3"/><path d="M4 6v6c0 1.7 3.6 3 8 3s8-1.3 8-3V6"/><path d="M4 12v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6"/></symbol>
+  <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 5-3.5 8.4-8 9-4.5-.6-8-4-8-9V6z"/><path d="M9 12l2 2 4-4"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 8v5M12 16.5v.5"/><circle cx="12" cy="12" r="9"/></symbol>
+  <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8v.5"/></symbol>
+</svg>
+
+<!-- 锁屏 -->
+<div id="lock">
+  <div class="lock-card">
+    <div class="logo-mark">M</div>
+    <h1 id="lockTitle">多账号管理中心</h1>
+    <p id="lockSub">Trae / CodeBuddy · 账号池 · 自动签到 · 积分追踪</p>
+    <div class="err" id="lockError"></div>
+    <input type="password" id="lockPw" placeholder="请输入主口令" autocomplete="current-password">
+    <input type="password" id="setupPw" class="hidden" placeholder="设置主口令（至少 6 位）" autocomplete="new-password" style="margin-bottom:10px">
+    <input type="password" id="setupPw2" class="hidden" placeholder="再次输入确认" autocomplete="new-password" style="margin-bottom:10px">
+    <button class="primary" id="lockBtn" onclick="submitLock()"><svg class="i"><use href="#i-lock"/></svg>解锁面板</button>
+    <div id="lockHint" class="hidden" style="margin-top:14px;font-size:11px;color:var(--muted);line-height:1.7">
+      口令用于加密本机保存的账号凭据，<b>无法找回</b>；<br>忘记口令只能删除数据目录重新开始。
+    </div>
+  </div>
+</div>
+
+<div id="loading"></div>
+<div id="toastRoot"></div>
+
+<!-- 主界面 -->
+<div id="app" class="hidden">
+  <aside>
+    <div class="brand">
+      <div class="mark">M</div>
+      <div class="name">MAM<small>MULTI ACCOUNT</small></div>
+    </div>
+    <nav id="nav">
+      <a data-view="overview" class="active"><svg class="i"><use href="#i-grid"/></svg><span>概览</span></a>
+      <a data-view="accounts"><svg class="i"><use href="#i-users"/></svg><span>账号管理</span><span class="tag" id="tagAcc"></span></a>
+      <a data-view="checkin"><svg class="i"><use href="#i-cal"/></svg><span>签到日历</span></a>
+      <a data-view="points"><svg class="i"><use href="#i-chart"/></svg><span>积分追踪</span></a>
+      <a data-view="logs"><svg class="i"><use href="#i-list"/></svg><span>执行日志</span></a>
+      <a data-view="settings"><svg class="i"><use href="#i-gear"/></svg><span>系统设置</span></a>
+    </nav>
+    <div class="side-foot">
+      <div><span class="dot"></span> 服务运行中</div>
+      <div>127.0.0.1 · 本地加密</div>
+    </div>
+  </aside>
+
+  <main>
+    <!-- 概览 -->
+    <section id="view-overview" class="view">
+      <div class="topbar">
+        <div><h2>概览</h2><div class="sub">账号池整体状态与积分趋势</div></div>
+        <div class="actions">
+          <button onclick="loadOverview()"><svg class="i"><use href="#i-refresh"/></svg>刷新</button>
+          <button class="primary" onclick="runCheckin()"><svg class="i"><use href="#i-play"/></svg>执行签到</button>
+        </div>
+      </div>
+      <div class="stats" id="ovCards"></div>
+      <div class="panel">
+        <div class="panel-head"><h3><svg class="i"><use href="#i-chart"/></svg>近 30 天积分趋势</h3><span class="pill plain" id="ovChartHint"></span></div>
+        <div class="panel-body"><div id="ovChart" class="chart"></div></div>
+      </div>
+    </section>
+
+    <!-- 账号 -->
+    <section id="view-accounts" class="view hidden">
+      <div class="topbar">
+        <div><h2>账号管理</h2><div class="sub">添加账号前请先在客户端登录，系统会采集登录态并加密存储</div></div>
+        <div class="actions">
+          <button onclick="loadAccounts()"><svg class="i"><use href="#i-refresh"/></svg>刷新</button>
+          <button class="primary" onclick="openModal('addModal')"><svg class="i"><use href="#i-plus"/></svg>添加账号</button>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="hint-bar"><svg class="i" style="color:var(--green)"><use href="#i-shield"/></svg>带 <span class="live-dot"></span> 标记的是该工具当前活跃账号；切换会自动备份旧登录态并支持失败回滚</div>
+        <table id="accTable"></table>
+      </div>
+    </section>
+
+    <!-- 签到 -->
+    <section id="view-checkin" class="view hidden">
+      <div class="topbar">
+        <div><h2>签到日历</h2><div class="sub">各账号当月签到情况，支持手动触发批量签到</div></div>
+        <div class="actions">
+          <input type="month" id="calMonth" style="width:150px" onchange="loadCalendar()">
+          <button class="primary" onclick="runCheckin()"><svg class="i"><use href="#i-play"/></svg>立即签到</button>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-head">
+          <h3><svg class="i"><use href="#i-cal"/></svg>签到矩阵</h3>
+          <div class="legend">
+            <span><i style="background:rgba(52,211,153,.6)"></i>成功</span>
+            <span><i style="background:rgba(155,107,255,.6)"></i>已签</span>
+            <span><i style="background:rgba(248,113,113,.6)"></i>失败</span>
+            <span><i style="background:rgba(251,191,36,.5)"></i>跳过</span>
+          </div>
+        </div>
+        <div class="panel-body" id="calPanel"><div class="empty">加载中…</div></div>
+      </div>
+    </section>
+
+    <!-- 积分 -->
+    <section id="view-points" class="view hidden">
+      <div class="topbar">
+        <div><h2>积分追踪</h2><div class="sub">余额快照历史；未配置积分接口时不会自动拉取</div></div>
+        <div class="actions">
+          <button onclick="refreshPoints()"><svg class="i"><use href="#i-refresh"/></svg>刷新全部积分</button>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-head">
+          <h3><svg class="i"><use href="#i-chart"/></svg>余额趋势</h3>
+          <select id="ptAccount" style="width:180px" onchange="renderPointsChart()"></select>
+        </div>
+        <div class="panel-body"><div id="ptChart" class="chart"></div></div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><h3><svg class="i"><use href="#i-coins"/></svg>最新余额</h3></div>
+        <table id="ptTable"></table>
+      </div>
+    </section>
+
+    <!-- 日志 -->
+    <section id="view-logs" class="view hidden">
+      <div class="topbar">
+        <div><h2>执行日志</h2><div class="sub">切换 / 签到 / 积分轮询等动作的可追溯记录</div></div>
+        <div class="actions">
+          <select id="logType" style="width:140px" onchange="loadLogs()">
+            <option value="">全部类型</option><option value="switch">切换</option>
+            <option value="checkin">签到</option><option value="points_poll">积分轮询</option>
+          </select>
+          <button onclick="loadLogs()"><svg class="i"><use href="#i-refresh"/></svg>刷新</button>
+        </div>
+      </div>
+      <div class="panel"><table id="logTable"></table></div>
+    </section>
+
+    <!-- 设置 -->
+    <section id="view-settings" class="view hidden">
+      <div class="topbar">
+        <div><h2>系统设置</h2><div class="sub">签到时间、切换策略、限流与通知参数，保存后立即生效</div></div>
+        <div class="actions">
+          <button class="primary" onclick="saveConfig()"><svg class="i"><use href="#i-check"/></svg>保存配置</button>
+          <button onclick="loadConfig()"><svg class="i"><use href="#i-refresh"/></svg>重新载入</button>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><h3><svg class="i"><use href="#i-gear"/></svg>config.json</h3><button class="sm danger" onclick="lockNow()"><svg class="i"><use href="#i-lock"/></svg>锁定面板</button></div>
+        <div class="panel-body"><textarea id="cfgEditor" spellcheck="false"></textarea></div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><h3><svg class="i"><use href="#i-info"/></svg>配置说明</h3></div>
+        <div class="panel-body cfg-note">
+          · <code>adapters.*.checkin_url / points_url</code> 留空 = <b>手动模式</b>：只做账号切换与记录，不模拟签到请求<br>
+          · 接口逆向完成后配置 URL 与 <code>auth</code>（token 提取规则）即启用全自动签到与积分拉取<br>
+          · <code>switch.account_interval_seconds</code>、<code>schedule.jitter_minutes</code> 为风控节流参数，建议保持随机化<br>
+          · 面板仅监听 127.0.0.1，闲置 <code>security.auto_lock_minutes</code> 分钟后自动锁定
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<!-- 添加账号 -->
+<div id="addModal" class="mask hidden">
+  <div class="modal">
+    <div class="modal-head"><h3>添加账号</h3><button class="close-x" onclick="closeModal('addModal')"><svg class="i"><use href="#i-x"/></svg></button></div>
+    <div class="modal-body">
+      <div><label class="f">工具 *</label><select id="addTool"><option value="trae">Trae</option><option value="codebuddy">CodeBuddy</option></select></div>
+      <div><label class="f">账号名称 *</label><input id="addName" placeholder="如：工作主力号"></div>
+      <div class="full"><label class="f">登录态目录（可选）</label><input id="addDir" placeholder="留空则使用配置中的 credential_dir"><div class="field-hint">目录内为该客户端的用户数据/配置目录，系统会排除缓存与日志后采集</div></div>
+      <div><label class="f">分组</label><input id="addGroups" placeholder="工作,重点"></div>
+      <div><label class="f">备注</label><input id="addRemark" placeholder="可选"></div>
+    </div>
+    <div class="modal-foot">
+      <button onclick="closeModal('addModal')">取消</button>
+      <button class="primary" onclick="addAccount()"><svg class="i"><use href="#i-plus"/></svg>采集并添加</button>
+    </div>
+  </div>
+</div>
+
+<!-- 编辑账号 -->
+<div id="editModal" class="mask hidden">
+  <div class="modal">
+    <div class="modal-head"><h3>编辑账号</h3><button class="close-x" onclick="closeModal('editModal')"><svg class="i"><use href="#i-x"/></svg></button></div>
+    <div class="modal-body">
+      <input type="hidden" id="editId">
+      <div><label class="f">名称</label><input id="editName"></div>
+      <div><label class="f">状态</label>
+        <select id="editStatus">
+          <option value="active">active（正常）</option>
+          <option value="paused">paused（暂停）</option>
+          <option value="invalid">invalid（凭据失效）</option>
+          <option value="banned">banned（封禁）</option>
+        </select>
+      </div>
+      <div class="full"><label class="f">备注</label><input id="editRemark"></div>
+      <div class="full"><label class="f">加入分组</label><input id="editGroup" placeholder="输入分组名，留空则跳过"></div>
+    </div>
+    <div class="modal-foot">
+      <button onclick="closeModal('editModal')">取消</button>
+      <button class="primary" onclick="saveEdit()"><svg class="i"><use href="#i-check"/></svg>保存</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let TOKEN = '';
+let ACCOUNTS = [];
+let POINTS_DATA = null;
+let ovChart = null, ptChart = null;
+
+/* ================= 基础 ================= */
+async function api(path, opts = {}) {
+  const res = await fetch(path, {
+    ...opts,
+    headers: { 'Content-Type': 'application/json', ...(TOKEN ? { Authorization: 'Bearer ' + TOKEN } : {}), ...(opts.headers || {}) },
+  });
+  if (res.status === 423 || res.status === 401) { showLock(); throw new Error('locked'); }
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.message || data.error || ('HTTP ' + res.status));
+  return data;
+}
+const ICONS = { ok: '#i-check', err: '#i-alert', info: '#i-info' };
+function toast(msg, type = 'info') {
+  const el = document.createElement('div');
+  el.className = 'toast ' + (type === 'ok' ? 'ok' : type === 'err' ? 'err' : '');
+  el.innerHTML = `<svg class="i t-ico"><use href="${ICONS[type] || ICONS.info}"/></svg><div>${esc(msg)}</div>`;
+  document.getElementById('toastRoot').appendChild(el);
+  setTimeout(() => { el.style.opacity = '0'; el.style.transition = '.3s'; setTimeout(() => el.remove(), 300); }, 3800);
+}
+function loading(on) { document.getElementById('loading').classList.toggle('on', on); }
+function esc(s) { return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function fmtTs(ts) { return new Date(ts).toLocaleString('zh-CN', { hour12: false }); }
+function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
+function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+function emptyRow(cols, text) {
+  return `<tr><td colspan="${cols}"><div class="empty"><svg class="i"><use href="#i-info"/></svg><div>${text}</div></div></td></tr>`;
+}
+
+/* ================= 锁屏 ================= */
+let NEEDS_SETUP = false;
+function showLock() {
+  document.getElementById('lock').classList.remove('hidden');
+  document.getElementById('app').classList.add('hidden');
+  setTimeout(() => document.getElementById('lockPw').focus(), 60);
+}
+function applyLockMode(needsSetup) {
+  NEEDS_SETUP = needsSetup;
+  document.getElementById('lockTitle').textContent = needsSetup ? '首次使用 · 设置主口令' : '多账号管理中心';
+  document.getElementById('lockSub').textContent = needsSetup
+    ? '口令用于加密账号凭据，请设置并牢记'
+    : 'Trae / CodeBuddy · 账号池 · 自动签到 · 积分追踪';
+  document.getElementById('lockPw').classList.toggle('hidden', needsSetup);
+  document.getElementById('setupPw').classList.toggle('hidden', !needsSetup);
+  document.getElementById('setupPw2').classList.toggle('hidden', !needsSetup);
+  document.getElementById('lockHint').classList.toggle('hidden', !needsSetup);
+  document.getElementById('lockBtn').innerHTML = `<svg class="i"><use href="#i-lock"/></svg>${needsSetup ? '创建并进入' : '解锁面板'}`;
+  setTimeout(() => document.getElementById(needsSetup ? 'setupPw' : 'lockPw').focus(), 80);
+}
+function enterApp(token) {
+  TOKEN = token;
+  document.getElementById('lock').classList.add('hidden');
+  document.getElementById('app').classList.remove('hidden');
+  loadAccounts();
+  loadOverview();
+}
+function submitLock() { NEEDS_SETUP ? setupVault() : unlock(); }
+async function unlock() {
+  const pw = document.getElementById('lockPw').value;
+  const errEl = document.getElementById('lockError');
+  errEl.textContent = '';
+  try {
+    const r = await api('/api/session/unlock', { method: 'POST', body: JSON.stringify({ password: pw }) });
+    document.getElementById('lockPw').value = '';
+    enterApp(r.token);
+  } catch (e) { errEl.textContent = e.message === 'locked' ? '会话已过期' : '主口令错误，请重试'; }
+}
+async function setupVault() {
+  const pw = document.getElementById('setupPw').value;
+  const pw2 = document.getElementById('setupPw2').value;
+  const errEl = document.getElementById('lockError');
+  errEl.textContent = '';
+  if (pw.length < 6) { errEl.textContent = '主口令至少 6 位'; return; }
+  if (pw !== pw2) { errEl.textContent = '两次输入不一致'; return; }
+  try {
+    const r = await api('/api/session/setup', { method: 'POST', body: JSON.stringify({ password: pw }) });
+    document.getElementById('setupPw').value = '';
+    document.getElementById('setupPw2').value = '';
+    NEEDS_SETUP = false;
+    enterApp(r.token);
+  } catch (e) { errEl.textContent = '创建失败：' + e.message; }
+}
+async function lockNow() { try { await api('/api/session/lock', { method: 'POST' }); } catch {} showLock(); }
+for (const id of ['lockPw', 'setupPw2']) {
+  document.getElementById(id).addEventListener('keydown', e => { if (e.key === 'Enter') submitLock(); });
+}
+
+/* ================= 导航 ================= */
+document.getElementById('nav').addEventListener('click', e => {
+  const a = e.target.closest('a'); if (!a) return;
+  e.preventDefault();
+  document.querySelectorAll('#nav a').forEach(x => x.classList.remove('active'));
+  a.classList.add('active');
+  document.querySelectorAll('.view').forEach(v => v.classList.add('hidden'));
+  document.getElementById('view-' + a.dataset.view).classList.remove('hidden');
+  const loaders = { overview: loadOverview, accounts: loadAccounts, checkin: loadCalendar, points: loadPoints, logs: loadLogs, settings: loadConfig };
+  (loaders[a.dataset.view] || (() => {}))();
+});
+
+/* ================= 概览 ================= */
+async function loadOverview() {
+  try {
+    const d = await api('/api/overview');
+    const pending = Math.max(0, d.today.total - d.today.success);
+    document.getElementById('ovCards').innerHTML = `
+      <div class="stat"><div class="top"><span class="lbl">账号总数</span><span class="ico"><svg class="i"><use href="#i-users"/></svg></span></div><div class="val">${d.accountCount}</div><div class="hint">共 ${d.today.total} 个活跃待签</div></div>
+      <div class="stat"><div class="top"><span class="lbl">今日已签</span><span class="ico"><svg class="i"><use href="#i-check"/></svg></span></div><div class="val green">${d.today.success}</div><div class="hint">待签 ${pending} 个</div></div>
+      <div class="stat"><div class="top"><span class="lbl">今日失败</span><span class="ico"><svg class="i"><use href="#i-alert"/></svg></span></div><div class="val ${d.today.failed ? 'red' : ''}">${d.today.failed}</div><div class="hint">失败会自动重试</div></div>
+      <div class="stat"><div class="top"><span class="lbl">积分总量</span><span class="ico"><svg class="i"><use href="#i-coins"/></svg></span></div><div class="val">${d.totalPoints}</div><div class="hint">各账号最新余额之和</div></div>
+      <div class="stat"><div class="top"><span class="lbl">异常账号</span><span class="ico"><svg class="i"><use href="#i-shield"/></svg></span></div><div class="val ${d.invalidCount ? 'red' : 'green'}">${d.invalidCount}</div><div class="hint">失效 / 封禁</div></div>
+      <div class="stat"><div class="top"><span class="lbl">签到计划</span><span class="ico"><svg class="i"><use href="#i-cal"/></svg></span></div><div class="val amber" style="font-size:20px;padding-top:5px">${esc(d.schedule.checkin_time)}</div><div class="hint">随机抖动 ±${d.schedule.jitter_minutes} 分钟</div></div>`;
+    document.getElementById('tagAcc').textContent = d.accountCount || '';
+    const withData = d.pointsSeries.filter(s => s.snapshots.length);
+    document.getElementById('ovChartHint').textContent = withData.length ? withData.length + ' 个账号有数据' : '暂无积分快照';
+    if (!window.echarts) { document.getElementById('ovChart').innerHTML = '<div class="empty">图表库加载失败（无网络）</div>'; return; }
+    ovChart = ovChart || echarts.init(document.getElementById('ovChart'));
+    ovChart.setOption({
+      backgroundColor: 'transparent', tooltip: { trigger: 'axis' },
+      legend: { textStyle: { color: '#a7b4c6', fontSize: 11 }, top: 0, icon: 'roundRect', itemWidth: 10, itemHeight: 10 },
+      grid: { left: 48, right: 18, top: 38, bottom: 26 },
+      xAxis: { type: 'time', axisLine: { lineStyle: { color: 'rgba(255,255,255,.12)' } }, axisLabel: { color: '#6b7a8f', fontSize: 11 }, splitLine: { show: false } },
+      yAxis: { type: 'value', axisLabel: { color: '#6b7a8f', fontSize: 11 }, splitLine: { lineStyle: { color: 'rgba(255,255,255,.05)' } } },
+      color: ['#5b8cff', '#34d399', '#fbbf24', '#f87171', '#9b6bff', '#22d3ee'],
+      series: withData.map(s => ({
+        name: s.name, type: 'line', smooth: true, showSymbol: false, lineStyle: { width: 2 },
+        areaStyle: { opacity: .08 }, data: s.snapshots.map(p => [p.t, p.v]),
+      })),
+    }, true);
+  } catch (e) { if (e.message !== 'locked') toast('加载失败: ' + e.message, 'err'); }
+}
+
+/* ================= 账号 ================= */
+async function loadAccounts() {
+  try {
+    ACCOUNTS = await api('/api/accounts');
+    const rows = ACCOUNTS.map(a => `
+      <tr>
+        <td class="num">${a.id}</td>
+        <td><div class="acc-name">${esc(a.name)}${a.isActive ? '<span class="live-dot"></span>' : ''}</div>${a.remark ? `<div style="font-size:11px;color:var(--muted)">${esc(a.remark)}</div>` : ''}</td>
+        <td><span class="pill ${a.toolId}">${a.toolId}</span></td>
+        <td><span class="pill ${a.status}">${a.status}</span></td>
+        <td>${(a.groups || []).map(g => `<span class="chip">${esc(g)}</span>`).join('') || '<span style="color:var(--muted)">—</span>'}</td>
+        <td class="num">${a.balance ?? '<span style="color:var(--muted)">—</span>'}</td>
+        <td>${a.today ? `<span class="pill ${a.today.status}">${a.today.status}</span>` : '<span style="color:var(--muted)">未执行</span>'}</td>
+        <td class="actions-cell">
+          <button class="sm" onclick="switchAccount(${a.id})" title="切换到此账号"><svg class="i"><use href="#i-switch"/></svg>切换</button>
+          <button class="sm" onclick="checkinOne(${a.id})" title="单独签到"><svg class="i"><use href="#i-check"/></svg></button>
+          <button class="sm" onclick="editAccount(${a.id})" title="编辑"><svg class="i"><use href="#i-edit"/></svg></button>
+          <button class="sm danger" onclick="delAccount(${a.id})" title="删除"><svg class="i"><use href="#i-trash"/></svg></button>
+        </td>
+      </tr>`);
+    document.getElementById('accTable').innerHTML =
+      `<thead><tr><th>ID</th><th>账号名称</th><th>工具</th><th>状态</th><th>分组</th><th>积分</th><th>今日</th><th>操作</th></tr></thead><tbody>` +
+      (rows.length ? rows.join('') : emptyRow(8, '还没有账号，点击右上角「添加账号」开始')) + '</tbody>';
+    document.getElementById('tagAcc').textContent = ACCOUNTS.length || '';
+  } catch (e) { if (e.message !== 'locked') toast('加载失败: ' + e.message, 'err'); }
+}
+async function addAccount() {
+  const body = {
+    toolId: document.getElementById('addTool').value,
+    name: document.getElementById('addName').value.trim(),
+    dir: document.getElementById('addDir').value.trim() || undefined,
+    remark: document.getElementById('addRemark').value.trim() || undefined,
+    groups: document.getElementById('addGroups').value.split(',').map(s => s.trim()).filter(Boolean),
+  };
+  if (!body.name) return toast('请填写账号名称', 'err');
+  loading(true);
+  try {
+    const r = await api('/api/accounts', { method: 'POST', body: JSON.stringify(body) });
+    toast(`已添加「${body.name}」，采集 ${r.fileCount} 个凭据文件`, 'ok');
+    ['addName','addDir','addGroups','addRemark'].forEach(id => document.getElementById(id).value = '');
+    closeModal('addModal'); loadAccounts();
+  } catch (e) { toast('添加失败：' + e.message, 'err'); }
+  loading(false);
+}
+async function switchAccount(id) {
+  loading(true);
+  try { const r = await api('/api/switch/' + id, { method: 'POST' }); toast(r.message, r.ok ? 'ok' : 'err'); loadAccounts(); }
+  catch (e) { toast(e.message, 'err'); }
+  loading(false);
+}
+async function checkinOne(id) {
+  loading(true);
+  try {
+    const r = await api('/api/checkin', { method: 'POST', body: JSON.stringify({ accountId: id, intervalSeconds: [0, 1], noRetry: true }) });
+    const rec = r.records[0];
+    toast(rec ? `签到结果：${rec.status}${rec.message ? ' · ' + rec.message : ''}` : '无执行记录', rec && rec.status === 'failed' ? 'err' : 'ok');
+    loadAccounts();
+  } catch (e) { toast(e.message, 'err'); }
+  loading(false);
+}
+function editAccount(id) {
+  const a = ACCOUNTS.find(x => x.id === id); if (!a) return;
+  document.getElementById('editId').value = id;
+  document.getElementById('editName').value = a.name;
+  document.getElementById('editStatus').value = a.status;
+  document.getElementById('editRemark').value = a.remark || '';
+  document.getElementById('editGroup').value = '';
+  openModal('editModal');
+}
+async function saveEdit() {
+  const id = Number(document.getElementById('editId').value);
+  const body = {
+    name: document.getElementById('editName').value.trim() || undefined,
+    status: document.getElementById('editStatus').value,
+    remark: document.getElementById('editRemark').value.trim(),
+  };
+  try {
+    await api('/api/accounts/' + id, { method: 'PATCH', body: JSON.stringify(body) });
+    const g = document.getElementById('editGroup').value.trim();
+    if (g) await api('/api/groups/assign', { method: 'POST', body: JSON.stringify({ accountId: id, group: g }) });
+    toast('已保存', 'ok'); closeModal('editModal'); loadAccounts();
+  } catch (e) { toast(e.message, 'err'); }
+}
+async function delAccount(id) {
+  const a = ACCOUNTS.find(x => x.id === id); if (!a) return;
+  if (!confirm(`确认删除账号「${a.name}」？\n（软删除，凭据保留，可在 CLI 用 --hard 彻底删除）`)) return;
+  try { await api('/api/accounts/' + id, { method: 'DELETE' }); toast('已删除', 'ok'); loadAccounts(); }
+  catch (e) { toast(e.message, 'err'); }
+}
+
+/* ================= 签到 ================= */
+async function loadCalendar() {
+  const mEl = document.getElementById('calMonth');
+  if (!mEl.value) { const n = new Date(); mEl.value = `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, '0')}`; }
+  const month = mEl.value;
+  try {
+    if (!ACCOUNTS.length) ACCOUNTS = await api('/api/accounts');
+    const records = await api('/api/checkin/records?month=' + month);
+    const byAcc = {};
+    records.forEach(r => { (byAcc[r.accountId] = byAcc[r.accountId] || {})[r.checkinDate.slice(8)] = r; });
+    const [y, m] = month.split('-').map(Number);
+    const days = new Date(y, m, 0).getDate();
+    const now = new Date();
+    const isCurrent = now.getFullYear() === y && now.getMonth() + 1 === m;
+    const heads = Array.from({ length: days }, (_, i) => {
+      const wd = new Date(y, m - 1, i + 1).getDay();
+      return `<div class="d ${wd === 0 || wd === 6 ? 'weekend' : ''}">${i + 1}</div>`;
+    }).join('');
+    let html = `<div class="cal-wrap"><div class="cal-grid" style="--days:${days}">
+      <div class="cal-head"><div class="d" style="text-align:left">账号</div>${heads}</div>`;
+    for (const a of ACCOUNTS) {
+      const cells = Array.from({ length: days }, (_, i) => {
+        const day = String(i + 1).padStart(2, '0');
+        const rec = byAcc[a.id]?.[day];
+        const cls = [rec ? rec.status : '', isCurrent && now.getDate() === i + 1 ? 'today' : ''].join(' ');
+        const title = rec ? `${month}-${day} · ${rec.status}${rec.message ? ' · ' + rec.message : ''}` : `${month}-${day} · 无记录`;
+        return `<div class="cal-cell ${cls}" title="${esc(title)}">${i + 1}</div>`;
+      }).join('');
+      html += `<div class="cal-row"><div class="cal-name">${a.isActive ? '<span class="live-dot"></span>' : ''}${esc(a.name)}</div>${cells}</div>`;
+    }
+    html += '</div></div>';
+    document.getElementById('calPanel').innerHTML = ACCOUNTS.length ? html : '<div class="empty">暂无账号</div>';
+  } catch (e) { if (e.message !== 'locked') toast(e.message, 'err'); }
+}
+async function runCheckin() {
+  if (!confirm('立即对全部活跃账号执行签到？\n将逐个切换账号，账号间有随机间隔，请勿关闭面板。')) return;
+  loading(true);
+  try {
+    const r = await api('/api/checkin', { method: 'POST', body: JSON.stringify({ intervalSeconds: [2, 6] }) });
+    toast(`签到完成：成功 ${r.success} · 已签 ${r.already} · 失败 ${r.failed} · 跳过 ${r.skipped}`, r.failed ? 'err' : 'ok');
+    loadAccounts(); loadCalendar();
+  } catch (e) { toast(e.message, 'err'); }
+  loading(false);
+}
+
+/* ================= 积分 ================= */
+async function loadPoints() {
+  try {
+    POINTS_DATA = await api('/api/points?days=30');
+    document.getElementById('ptTable').innerHTML =
+      `<thead><tr><th>ID</th><th>账号</th><th>工具</th><th>最新余额</th><th>近 30 天快照</th></tr></thead><tbody>` +
+      (POINTS_DATA.accounts.length ? POINTS_DATA.accounts.map(s => `
+        <tr><td class="num">${s.account.id}</td><td>${esc(s.account.name)}</td>
+        <td><span class="pill ${s.account.toolId}">${s.account.toolId}</span></td>
+        <td class="num">${s.latest ?? '<span style="color:var(--muted)">—</span>'}</td>
+        <td>${s.snapshots.length}</td></tr>`).join('') : emptyRow(5, '暂无数据')) + '</tbody>';
+    const sel = document.getElementById('ptAccount');
+    const prev = sel.value;
+    sel.innerHTML = POINTS_DATA.accounts.map(s => `<option value="${s.account.id}">${esc(s.account.name)}</option>`).join('');
+    if (prev) sel.value = prev;
+    renderPointsChart();
+  } catch (e) { if (e.message !== 'locked') toast(e.message, 'err'); }
+}
+function renderPointsChart() {
+  if (!POINTS_DATA) return;
+  const el = document.getElementById('ptChart');
+  const id = Number(document.getElementById('ptAccount').value);
+  const series = POINTS_DATA.accounts.find(s => s.account.id === id) || POINTS_DATA.accounts[0];
+  if (!window.echarts) { el.innerHTML = '<div class="empty">图表库加载失败（无网络）</div>'; return; }
+  ptChart = ptChart || echarts.init(el);
+  if (!series) { ptChart.clear(); return; }
+  ptChart.setOption({
+    backgroundColor: 'transparent', tooltip: { trigger: 'axis' },
+    grid: { left: 48, right: 18, top: 20, bottom: 26 },
+    xAxis: { type: 'time', axisLine: { lineStyle: { color: 'rgba(255,255,255,.12)' } }, axisLabel: { color: '#6b7a8f', fontSize: 11 }, splitLine: { show: false } },
+    yAxis: { type: 'value', axisLabel: { color: '#6b7a8f', fontSize: 11 }, splitLine: { lineStyle: { color: 'rgba(255,255,255,.05)' } } },
+    series: [{
+      name: series.account.name, type: 'line', smooth: true, showSymbol: false, lineStyle: { width: 2.2, color: '#5b8cff' },
+      areaStyle: { color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{ offset: 0, color: 'rgba(91,140,255,.28)' }, { offset: 1, color: 'rgba(91,140,255,0)' }]) },
+      data: series.snapshots.map(p => [p.t, p.v]),
+    }],
+  }, true);
+}
+async function refreshPoints() {
+  if (!confirm('将逐个切换账号并拉取积分（需已配置 points_url），继续？')) return;
+  loading(true);
+  try {
+    const r = await api('/api/points/refresh', { method: 'POST', body: '{}' });
+    toast('刷新完成：' + r.filter(x => x.balance !== null).length + '/' + r.length + ' 个账号成功', 'ok');
+    loadPoints();
+  } catch (e) { toast(e.message, 'err'); }
+  loading(false);
+}
+
+/* ================= 日志 ================= */
+async function loadLogs() {
+  try {
+    const type = document.getElementById('logType').value;
+    const logs = await api('/api/logs?limit=200' + (type ? '&taskType=' + encodeURIComponent(type) : ''));
+    document.getElementById('logTable').innerHTML =
+      `<thead><tr><th>时间</th><th>类型</th><th>账号</th><th>状态</th><th>详情</th><th>耗时</th></tr></thead><tbody>` +
+      (logs.length ? logs.map(l => {
+        let detail = '';
+        try { const d = JSON.parse(l.detail); detail = d.message || d.error || l.detail; } catch { detail = l.detail; }
+        return `<tr>
+          <td style="color:var(--text-2);font-size:12px;white-space:nowrap">${fmtTs(l.startedAt)}</td>
+          <td><span class="pill plain">${esc(l.taskType)}</span></td>
+          <td class="num">${l.accountId ?? '—'}</td>
+          <td><span class="pill ${l.status === 'ok' ? 'success' : 'failed'}">${l.status}</span></td>
+          <td style="max-width:420px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(detail)}">${esc(detail)}</td>
+          <td style="color:var(--muted)">${l.durationMs}ms</td></tr>`;
+      }).join('') : emptyRow(6, '暂无日志')) + '</tbody>';
+  } catch (e) { if (e.message !== 'locked') toast(e.message, 'err'); }
+}
+
+/* ================= 设置 ================= */
+async function loadConfig() {
+  try { document.getElementById('cfgEditor').value = JSON.stringify(await api('/api/config'), null, 2); }
+  catch (e) { if (e.message !== 'locked') toast(e.message, 'err'); }
+}
+async function saveConfig() {
+  try {
+    const cfg = JSON.parse(document.getElementById('cfgEditor').value);
+    await api('/api/config', { method: 'PUT', body: JSON.stringify(cfg) });
+    toast('配置已保存并生效', 'ok');
+  } catch (e) { toast('保存失败：' + e.message, 'err'); }
+}
+
+/* ================= 启动 ================= */
+(async () => {
+  try {
+    const st = await api('/api/session/state');
+    applyLockMode(!!st.needsSetup);
+    if (st.needsSetup || st.locked) showLock();
+    else {
+      document.getElementById('app').classList.remove('hidden');
+      loadAccounts();
+      loadOverview();
+    }
+  } catch { applyLockMode(false); showLock(); }
+})();
+</script>
+</body>
+</html>

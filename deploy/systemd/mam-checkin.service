@@ -1,0 +1,18 @@
+# 系统级 systemd 服务：每日签到一次性任务
+# 安装：
+#   sudo cp deploy/systemd/mam-checkin.* /etc/systemd/system/
+#   sudo systemctl daemon-reload && sudo systemctl enable --now mam-checkin.timer
+# 按实际路径修改 ExecStart / MAM_HOME / User
+[Unit]
+Description=MAM daily check-in
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=mam
+Environment=MAM_HOME=/var/lib/mam
+# 单文件可执行程序路径
+ExecStart=/opt/mam/mam checkin --scheduled
+# 口令由 mam key store 托管（文件位于 $MAM_HOME/master.key，权限 0600）
+TimeoutStartSec=1800
