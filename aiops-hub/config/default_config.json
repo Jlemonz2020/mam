@@ -1,0 +1,56 @@
+{
+  "version": 1,
+  "server": {
+    "host": "127.0.0.1",
+    "port": 8787,
+    "admin_key": "change-me-local-admin-key",
+    "enable_mock": true
+  },
+  "agent": {
+    "enabled": true,
+    "heartbeat_timeout_seconds": 90,
+    "command_ttl_seconds": 300
+  },
+  "schedule": {
+    "checkin_time": "09:00",
+    "jitter_minutes": 30,
+    "points_poll_interval_hours": 6,
+    "health_check_interval_hours": 24,
+    "tick_seconds": 30
+  },
+  "switch": {
+    "strategy": "round-robin",
+    "auto_switch_after_checkin": true,
+    "account_interval_seconds": [2, 6],
+    "allow_while_running": false,
+    "backup_keep": 5
+  },
+  "limits": {
+    "min_request_interval_ms": 200,
+    "max_checkin_per_day": 1,
+    "retry_delays_seconds": [2, 5, 10]
+  },
+  "notify": {
+    "channels": ["log"],
+    "webhook_url": "",
+    "on": ["checkin_failed_twice", "account_invalid", "points_drop", "switch_failed"]
+  },
+  "gateway": {
+    "keys": [
+      {
+        "key": "local-demo-key",
+        "name": "demo",
+        "platform": "trae",
+        "quota": 1000,
+        "ip_whitelist": [],
+        "model_whitelist": []
+      }
+    ],
+    "upstream_url": "http://127.0.0.1:8787/mock/upstream"
+  },
+  "security": {
+    "auto_lock_minutes": 30,
+    "password_env": "AIOPS_PASSWORD",
+    "password_file_env": "AIOPS_PASSWORD_FILE"
+  }
+}

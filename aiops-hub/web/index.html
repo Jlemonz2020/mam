@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AIOpsHub · 统一账号运营中枢</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand"><span class="logo">AI</span><div><h1>AIOpsHub</h1><p>统一账号与额度运营中枢</p></div></div>
+    <div class="top-actions">
+      <label>管理密钥 <input id="adminKey" type="password" value="change-me-local-admin-key" /></label>
+      <button id="saveKey" class="ghost">保存</button>
+      <span id="healthBadge" class="badge">未检测</span>
+    </div>
+  </header>
+
+  <nav class="tabs">
+    <button class="tab active" data-tab="overview">总览</button>
+    <button class="tab" data-tab="accounts">账号池</button>
+    <button class="tab" data-tab="tasks">自动化任务</button>
+    <button class="tab" data-tab="observability">可观测</button>
+    <button class="tab" data-tab="gateway">网关与密钥</button>
+    <button class="tab" data-tab="agents">远程 Agent</button>
+    <button class="tab" data-tab="settings">设置与诊断</button>
+  </nav>
+
+  <main>
+    <section id="overview" class="panel active">
+      <div class="cards" id="summaryCards"></div>
+      <div class="grid-2">
+        <div class="card"><h3>初始化凭据库</h3><p class="muted">首次使用需设置主口令（至少 6 位）。</p>
+          <div class="row"><input id="initPassword" type="password" placeholder="主口令" /><button id="initBtn" class="primary">初始化</button></div>
+          <pre id="initResult" class="console"></pre>
+        </div>
+        <div class="card"><h3>最近事件</h3><div id="recentEvents" class="list"></div></div>
+      </div>
+    </section>
+
+    <section id="accounts" class="panel">
+      <div class="card">
+        <div class="row between"><h3>账号池</h3><div class="row">
+          <input id="newName" placeholder="账号名称" /><select id="newPlatform"></select><input id="newGroups" placeholder="分组,逗号分隔" />
+          <button id="addBtn" class="primary">添加账号</button><button id="refreshAccounts" class="ghost">刷新</button>
+        </div></div>
+        <table id="accountTable"><thead><tr><th>ID</th><th>名称</th><th>平台</th><th>状态</th><th>健康度</th><th>积分</th><th>分组</th><th>操作</th></tr></thead><tbody></tbody></table>
+      </div>
+    </section>
+
+    <section id="tasks" class="panel">
+      <div class="card"><div class="row between"><h3>统一调度任务</h3><button id="runTasks" class="primary">立即执行到期任务</button></div>
+        <table id="taskTable"><thead><tr><th>ID</th><th>名称</th><th>类型</th><th>触发</th><th>启用</th><th>上次执行</th></tr></thead><tbody></tbody></table>
+        <pre id="taskResult" class="console"></pre>
+      </div>
+    </section>
+
+    <section id="observability" class="panel">
+      <div class="grid-2">
+        <div class="card"><h3>账号健康</h3><div id="healthList" class="list"></div></div>
+        <div class="card"><h3>签到报表</h3><input id="reportMonth" placeholder="YYYY-MM" /><button id="refreshReport" class="ghost">查询</button><pre id="reportOut" class="console"></pre></div>
+      </div>
+      <div class="card"><h3>事件流水</h3><button id="refreshRecords" class="ghost">刷新</button><pre id="recordsOut" class="console"></pre></div>
+    </section>
+
+    <section id="gateway" class="panel">
+      <div class="grid-2">
+        <div class="card"><h3>模型调用</h3><p class="muted">使用统一网关密钥调用内置模拟上游，验证路由、鉴权与用量归集。</p>
+          <div class="row"><input id="gatewayKey" value="local-demo-key" /><input id="gatewayModel" value="gpt-4o-mini" /><button id="gatewayTest" class="primary">发起调用</button></div>
+          <pre id="gatewayOut" class="console"></pre>
+        </div>
+        <div class="card"><h3>网关用量</h3><div id="usageOut" class="list"></div></div>
+      </div>
+    </section>
+
+    <section id="agents" class="panel">
+      <div class="card"><div class="row between"><h3>远程 Agent 与命令队列</h3><button id="refreshAgents" class="ghost">刷新</button></div>
+        <div id="agentsOut" class="list"></div><pre id="commandsOut" class="console"></pre>
+        <p class="muted">在线 Agent 会自动接收切换命令；命令以 command_id 幂等，支持断点回放。</p>
+      </div>
+    </section>
+
+    <section id="settings" class="panel">
+      <div class="card"><h3>环境自检</h3><button id="doctorBtn" class="primary">运行 doctor</button><pre id="doctorOut" class="console"></pre></div>
+      <div class="card"><h3>平台适配器</h3><div id="adapterList" class="list"></div></div>
+    </section>
+  </main>
+
+  <div id="toast" class="toast"></div>
+  <script src="/app.js"></script>
+</body>
+</html>

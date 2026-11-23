@@ -1,0 +1,49 @@
+{
+  "version": 1,
+  "adapters": {
+    "trae": {
+      "label": "Trae CN",
+      "credential_dir": "fake-clients/trae",
+      "checkin_url": "http://127.0.0.1:8787/mock/checkin",
+      "points_url": "http://127.0.0.1:8787/mock/points",
+      "checkin_method": "POST",
+      "auth": null,
+      "token_file": "storage.json",
+      "token_json_path": "token",
+      "device_id_json_path": "device_id"
+    },
+    "codebuddy": {
+      "label": "CodeBuddy",
+      "credential_dir": "fake-clients/codebuddy",
+      "checkin_url": "http://127.0.0.1:8787/mock/checkin",
+      "points_url": "http://127.0.0.1:8787/mock/points",
+      "checkin_method": "POST",
+      "auth": null,
+      "token_file": "auth.json",
+      "token_json_path": "access_token",
+      "device_id_json_path": "device_id"
+    },
+    "workbuddy": {
+      "label": "WorkBuddy",
+      "credential_dir": "fake-clients/workbuddy",
+      "checkin_url": "http://127.0.0.1:8787/mock/checkin",
+      "points_url": "http://127.0.0.1:8787/mock/points",
+      "checkin_method": "POST",
+      "auth": null,
+      "token_file": "auth.json",
+      "token_json_path": "access_token",
+      "device_id_json_path": null
+    },
+    "qoder": {
+      "label": "Qoder",
+      "credential_dir": "fake-clients/qoder",
+      "checkin_url": "http://127.0.0.1:8787/mock/checkin",
+      "points_url": "http://127.0.0.1:8787/mock/points",
+      "checkin_method": "POST",
+      "auth": null,
+      "token_file": "auth.json",
+      "token_json_path": "access_token",
+      "device_id_json_path": "device_id"
+    }
+  }
+}

@@ -1,0 +1,9 @@
+data/
+demo-data/
+remote-demo-data/
+remote-agent-home/
+remote-server.log
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
